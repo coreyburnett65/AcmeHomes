@@ -1,0 +1,11 @@
+<Project>
+  <!--
+    Central package management: every NuGet version lives here, and .csproj files reference packages without a Version.
+    This keeps all projects on the same version of EF Core, Aspire, xUnit, etc.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+  </ItemGroup>
+</Project>
