@@ -6,7 +6,12 @@ An AI-powered home search site for a fictional homebuilder. Visitors search in p
 
 ## Status
 
-Work in progress. Currently building the solution structure, data model, and Web API.
+Work in progress.
+
+- **Done:** data model, EF Core migrations and seed data, the Web API, unit and integration tests, local orchestration with Aspire, and an Azure DevOps pipeline that deploys to Azure Container Apps.
+- **Next:** the Next.js front end, then natural-language search with Azure AI Search and Claude, then the inventory sync worker.
+
+The API is live at https://ca-acmehomes-api.ambitiousdune-18961024.centralus.azurecontainerapps.io. Its interactive API reference is at [/scalar](https://ca-acmehomes-api.ambitiousdune-18961024.centralus.azurecontainerapps.io/scalar). The demo scales to zero when idle, so the first request can take up to a minute.
 
 ## Tech stack
 
@@ -21,9 +26,9 @@ Work in progress. Currently building the solution structure, data model, and Web
 
 | Path | Purpose |
 |---|---|
-| `src/` | .NET projects (Domain, Infrastructure, Api, Aspire AppHost and ServiceDefaults) |
+| `src/` | .NET projects (Domain, Infrastructure, Api, MigrationService, Aspire AppHost and ServiceDefaults) |
 | `tests/` | xUnit unit and integration tests |
-| `web/` | Next.js front end |
+| `web/` | Next.js front end (coming in the next phase) |
 | `infra/` | Bicep templates for Azure resources |
 | `docs/decisions/` | Architecture decision records |
 
