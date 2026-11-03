@@ -1,9 +1,11 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/AcmeHomes.Api/AcmeHomes.Api.csproj" />
     <Project Path="src/AcmeHomes.Domain/AcmeHomes.Domain.csproj" />
     <Project Path="src/AcmeHomes.Infrastructure/AcmeHomes.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/AcmeHomes.Api.IntegrationTests/AcmeHomes.Api.IntegrationTests.csproj" />
     <Project Path="tests/AcmeHomes.Domain.Tests/AcmeHomes.Domain.Tests.csproj" />
     <Project Path="tests/AcmeHomes.Infrastructure.Tests/AcmeHomes.Infrastructure.Tests.csproj" />
   </Folder>

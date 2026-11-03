@@ -1,0 +1,21 @@
+@baseUrl = http://localhost:5138
+
+GET {{baseUrl}}/api/markets
+
+###
+GET {{baseUrl}}/api/communities?market=frederick
+
+###
+GET {{baseUrl}}/api/communities/juniper-hollow
+
+###
+GET {{baseUrl}}/api/floor-plans?market=baltimore
+
+###
+GET {{baseUrl}}/api/floor-plans/carver
+
+###
+GET {{baseUrl}}/api/homes?market=frederick&minBedrooms=4&maxPrice=450000
+
+###
+GET {{baseUrl}}/api/homes/1

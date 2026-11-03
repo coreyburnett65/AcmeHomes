@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AcmeHomes.Infrastructure\AcmeHomes.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Lets integration tests deserialize into the same internal response records the API returns. -->
+    <InternalsVisibleTo Include="AcmeHomes.Api.IntegrationTests" />
+  </ItemGroup>
+
+</Project>
