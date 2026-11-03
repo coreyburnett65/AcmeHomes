@@ -1,0 +1,7 @@
+# Store and check out text files with LF everywhere. Docker builds and Linux CI agents read the
+# working tree directly, so CRLF line endings would otherwise leak into containers and scripts.
+* text=auto eol=lf
+
+# Windows batch files require CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf

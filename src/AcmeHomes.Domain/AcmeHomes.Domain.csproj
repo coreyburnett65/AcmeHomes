@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared settings (target framework, nullable, analyzers) come from Directory.Build.props. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="AcmeHomes.Domain.Tests" />
+  </ItemGroup>
+
+</Project>

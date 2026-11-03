@@ -3,6 +3,8 @@ root = true
 # All files
 [*]
 indent_style = space
+end_of_line = lf
+charset = utf-8
 
 # Xml files
 [*.xml]
@@ -29,7 +31,7 @@ indent_size = 4
 tab_width = 4
 
 # New line preferences
-insert_final_newline = false
+insert_final_newline = true
 
 #### .NET Coding Conventions ####
 [*.{cs,vb}]
@@ -387,3 +389,10 @@ dotnet_naming_style.s_camelcase.required_suffix =
 dotnet_naming_style.s_camelcase.word_separator = 
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
+
+# Test code
+[tests/**.cs]
+
+# Underscores in test method names make them read as sentences in test output.
+# CA1707 exists to keep public library APIs idiomatic and doesn't apply to tests.
+dotnet_diagnostic.CA1707.severity = none
