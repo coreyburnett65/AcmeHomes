@@ -6,6 +6,9 @@ namespace AcmeHomes.Infrastructure.Persistence;
 
 public sealed class AcmeHomesDbContext(DbContextOptions<AcmeHomesDbContext> options) : DbContext(options)
 {
+    /// <summary>The connection string name, matching the database resource name in the Aspire AppHost.</summary>
+    public const string ConnectionName = "acmehomes";
+
     public DbSet<Market> Markets => Set<Market>();
 
     public DbSet<Community> Communities => Set<Community>();

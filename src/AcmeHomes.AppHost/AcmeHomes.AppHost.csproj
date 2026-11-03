@@ -1,0 +1,19 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.4">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <!-- Aspire stores generated secrets here, such as the local SQL Server password. They never enter the repo. -->
+    <UserSecretsId>f9faf601-faae-441f-99fa-2882cd72dd0d</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.SqlServer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AcmeHomes.Api\AcmeHomes.Api.csproj" />
+    <ProjectReference Include="..\AcmeHomes.MigrationService\AcmeHomes.MigrationService.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -3,11 +3,11 @@ using System.Text.Json.Serialization;
 
 using AcmeHomes.Api.IntegrationTests;
 using AcmeHomes.Infrastructure.Persistence;
+using AcmeHomes.Infrastructure.Persistence.Seeding;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 using Testcontainers.MsSql;
 
@@ -31,15 +31,16 @@ public sealed class AcmeHomesApiFactory : WebApplicationFactory<Program>, IAsync
     {
         await _database.StartAsync();
 
-        using var scope = Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AcmeHomesDbContext>();
+        // Does what the MigrationService does in the running app: apply migrations, which also runs the seeder.
+        var options = new DbContextOptionsBuilder<AcmeHomesDbContext>().UseSqlServer(_database.GetConnectionString());
+        options.UseAcmeHomesSeedData();
 
-        // Applies migrations, which also runs the seeder the API registers with UseAcmeHomesSeedData.
+        await using var context = new AcmeHomesDbContext(options.Options);
         await context.Database.MigrateAsync();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder) =>
-        builder.UseSetting("ConnectionStrings:AcmeHomes", _database.GetConnectionString());
+        builder.UseSetting($"ConnectionStrings:{AcmeHomesDbContext.ConnectionName}", _database.GetConnectionString());
 
     public override async ValueTask DisposeAsync()
     {

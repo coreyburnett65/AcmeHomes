@@ -60,7 +60,9 @@ internal static class FloorPlanEndpoints
         string slug,
         CancellationToken cancellationToken)
     {
+        // Features and communities are both small (a handful each), so one query beats the round trips of a split query.
         var plan = await db.FloorPlans
+            .AsSingleQuery()
             .Where(p => p.Slug == slug)
             .Select(p => new FloorPlanDetailResponse(
                 p.Slug,

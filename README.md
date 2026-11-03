@@ -29,9 +29,30 @@ Work in progress. Currently building the solution structure, data model, and Web
 
 ## Running locally
 
-Prerequisites: .NET 10 SDK, Docker Desktop, Node.js 22+.
+Prerequisites: .NET 10 SDK, Docker Desktop (running), Node.js 22+.
 
-Instructions will be added once the AppHost exists.
+```
+dotnet tool restore
+dotnet run --project src/AcmeHomes.AppHost
+```
+
+The Aspire AppHost starts everything in order:
+
+1. A SQL Server container (kept running between sessions, with its data in a Docker volume)
+2. The **migrations** service, which applies EF Core migrations, seeds the demo data, and exits
+3. The **API**, once migrations have completed
+
+The Aspire dashboard opens in your browser with logs, traces, and metrics for every service. The API reference (Scalar) is at `/scalar` on the API's URL, which the dashboard links to.
+
+To reset the local database, stop the AppHost and remove the SQL Server container and its volume in Docker Desktop.
+
+## Running tests
+
+```
+dotnet test --solution AcmeHomes.slnx
+```
+
+Infrastructure and API tests start their own SQL Server container through Testcontainers, so Docker must be running. The first run downloads the SQL Server image.
 
 ## Architecture decisions
 

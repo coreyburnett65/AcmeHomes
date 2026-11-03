@@ -94,7 +94,9 @@ internal static class HomeEndpoints
         int id,
         CancellationToken cancellationToken)
     {
+        // Plan and home features are both small, so one query beats the round trips of a split query.
         var home = await db.Homes
+            .AsSingleQuery()
             .Where(h => h.Id == id)
             .Select(h => new HomeDetailResponse(
                 h.Id,

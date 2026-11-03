@@ -2,29 +2,17 @@ using System.Text.Json.Serialization;
 
 using AcmeHomes.Api.Endpoints;
 using AcmeHomes.Infrastructure.Persistence;
-using AcmeHomes.Infrastructure.Persistence.Seeding;
-
-using Microsoft.EntityFrameworkCore;
 
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// The options callback runs when the first context is created, not here, so configuration supplied later
-// (Aspire, Azure app settings, or integration test overrides) is already in place when it's read.
-builder.Services.AddDbContextPool<AcmeHomesDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("AcmeHomes")
-        ?? throw new InvalidOperationException("Connection string 'AcmeHomes' is not configured.");
+// OpenTelemetry (traces, metrics, logs to the Aspire dashboard), health checks, service discovery, and HTTP resilience.
+builder.AddServiceDefaults();
 
-    // Retries cover transient Azure SQL errors, including the delay while a serverless database resumes from auto-pause.
-    // Single-query loading is set explicitly: detail endpoints project a couple of small collections (a handful of
-    // features and communities), so one round trip beats the extra queries that split loading would add.
-    options.UseSqlServer(connectionString, sql => sql
-        .EnableRetryOnFailure()
-        .UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery));
-    options.UseAcmeHomesSeedData();
-});
+// Aspire's EF Core integration: DbContext pooling, retries on transient errors (including the delay while a serverless
+// Azure SQL database resumes from auto-pause), a database health check, and query tracing.
+builder.AddSqlServerDbContext<AcmeHomesDbContext>(AcmeHomesDbContext.ConnectionName);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddValidation();
@@ -54,5 +42,7 @@ api.MapMarketEndpoints();
 api.MapCommunityEndpoints();
 api.MapFloorPlanEndpoints();
 api.MapHomeEndpoints();
+
+app.MapDefaultEndpoints();
 
 app.Run();

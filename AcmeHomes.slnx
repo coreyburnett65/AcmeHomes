@@ -1,8 +1,11 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/AcmeHomes.Api/AcmeHomes.Api.csproj" />
+    <Project Path="src/AcmeHomes.AppHost/AcmeHomes.AppHost.csproj" />
     <Project Path="src/AcmeHomes.Domain/AcmeHomes.Domain.csproj" />
     <Project Path="src/AcmeHomes.Infrastructure/AcmeHomes.Infrastructure.csproj" />
+    <Project Path="src/AcmeHomes.MigrationService/AcmeHomes.MigrationService.csproj" />
+    <Project Path="src/AcmeHomes.ServiceDefaults/AcmeHomes.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/AcmeHomes.Api.IntegrationTests/AcmeHomes.Api.IntegrationTests.csproj" />

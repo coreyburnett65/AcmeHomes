@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AcmeHomes.Infrastructure\AcmeHomes.Infrastructure.csproj" />
+    <ProjectReference Include="..\AcmeHomes.ServiceDefaults\AcmeHomes.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>
