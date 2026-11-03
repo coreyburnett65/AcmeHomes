@@ -11,3 +11,4 @@ One short file per significant decision: context, decision, alternatives conside
 | [0005](0005-azure-container-apps.md) | Azure Container Apps as the hosting target | Accepted |
 | [0006](0006-integration-tests-with-real-sql-server.md) | Integration tests against real SQL Server | Accepted |
 | [0007](0007-migration-service.md) | Database migrations run in a dedicated migration service | Accepted |
+| [0008](0008-azure-identity-and-database-access.md) | Azure identities and database access without secrets | Accepted |

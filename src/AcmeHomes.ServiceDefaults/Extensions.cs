@@ -108,18 +108,20 @@ public static class Extensions
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
-        // Adding health checks endpoints to applications in non-development environments has security implications.
-        // See https://aka.ms/aspire/healthchecks for details before enabling these endpoints in non-development environments.
+        // Liveness only runs checks tagged "live", which have no dependencies, so it's safe to expose and cheap to call.
+        // Azure Container Apps probes use it. Probing the full /health endpoint instead would query the database every
+        // few seconds, which stops serverless Azure SQL from auto-pausing and uses up the free offer within days.
+        app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("live")
+        });
+
+        // Full health, including the database check, stays Development only (for the Aspire dashboard). In Azure,
+        // anonymous callers could use it to keep the database awake.
+        // See https://aka.ms/aspire/healthchecks for the security considerations of health endpoints.
         if (app.Environment.IsDevelopment())
         {
-            // All health checks must pass for app to be considered ready to accept traffic after starting
             app.MapHealthChecks(HealthEndpointPath);
-
-            // Only health checks tagged with the "live" tag must pass for app to be considered alive
-            app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
-            {
-                Predicate = r => r.Tags.Contains("live")
-            });
         }
 
         return app;

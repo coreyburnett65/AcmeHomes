@@ -54,6 +54,12 @@ dotnet test --solution AcmeHomes.slnx
 
 Infrastructure and API tests start their own SQL Server container through Testcontainers, so Docker must be running. The first run downloads the SQL Server image.
 
+## Deployment
+
+An Azure DevOps pipeline builds and tests every change. On `main` it provisions Azure resources with Bicep, publishes container images, runs database migrations as a Container Apps Job, and then deploys the API to Azure Container Apps. No secrets are stored: the pipeline uses workload identity federation, and the apps use managed identities for the registry and Azure SQL.
+
+See [docs/deployment.md](docs/deployment.md) for the one-time setup, costs, and how to shut everything down.
+
 ## Architecture decisions
 
 See [docs/decisions](docs/decisions/README.md).

@@ -1,0 +1,205 @@
+# Build, test, and deploy Acme Homes to Azure Container Apps.
+# Pull requests run Build only. Pushes to main also provision, publish images, migrate, and deploy.
+# One-time setup (service connection, resource group, roles) is in docs/deployment.md.
+
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: [main]
+
+variables:
+  azureServiceConnection: acmehomes-azure
+  resourceGroup: rg-acmehomes-demo
+  imageTag: $(Build.BuildId)
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Build
+    displayName: Build and test
+    jobs:
+      - job: BuildAndTest
+        displayName: Build and test
+        steps:
+          - task: UseDotNet@2
+            displayName: Install .NET SDK from global.json
+            inputs:
+              packageType: sdk
+              useGlobalJson: true
+
+          - script: dotnet tool restore
+            displayName: Restore local tools
+
+          - script: dotnet build AcmeHomes.slnx --configuration Release
+            displayName: Build
+
+          # Microsoft-hosted Ubuntu agents include Docker, so the Testcontainers SQL Server tests run here too.
+          - script: >
+              dotnet test --solution AcmeHomes.slnx --configuration Release --no-build
+              --report-xunit-trx --results-directory $(Agent.TempDirectory)/TestResults
+            displayName: Test
+
+          - task: PublishTestResults@2
+            displayName: Publish test results
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: VSTest
+              testResultsFiles: '**/*.trx'
+              searchFolder: $(Agent.TempDirectory)/TestResults
+
+  - stage: Provision
+    displayName: Provision infrastructure
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables.isMain, true))
+    jobs:
+      - job: Infrastructure
+        displayName: Deploy shared infrastructure
+        steps:
+          - task: AzureCLI@2
+            displayName: Deploy main.bicep
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az deployment group create \
+                  --resource-group "$RESOURCE_GROUP" \
+                  --name "infra-$IMAGE_TAG" \
+                  --template-file infra/main.bicep
+            env:
+              RESOURCE_GROUP: $(resourceGroup)
+              IMAGE_TAG: $(imageTag)
+
+  - stage: Publish
+    displayName: Publish container images
+    dependsOn: Provision
+    jobs:
+      - job: Images
+        displayName: Build and push images
+        steps:
+          - task: UseDotNet@2
+            displayName: Install .NET SDK from global.json
+            inputs:
+              packageType: sdk
+              useGlobalJson: true
+
+          # The .NET SDK builds and pushes the images itself (no Dockerfiles), using the registry login from az acr login.
+          - task: AzureCLI@2
+            displayName: Publish API and migrations images
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                registry=$(az acr list --resource-group "$RESOURCE_GROUP" --query "[0].name" --output tsv)
+                loginServer=$(az acr show --name "$registry" --query loginServer --output tsv)
+                az acr login --name "$registry"
+                for project in AcmeHomes.Api AcmeHomes.MigrationService; do
+                  dotnet publish "src/$project" --configuration Release -t:PublishContainer \
+                    -p ContainerRegistry="$loginServer" -p ContainerImageTag="$IMAGE_TAG"
+                done
+            env:
+              RESOURCE_GROUP: $(resourceGroup)
+              IMAGE_TAG: $(imageTag)
+
+  - stage: Deploy
+    displayName: Migrate and deploy
+    dependsOn: Publish
+    jobs:
+      # Deployment jobs record history against the environment, where approvals can also be added.
+      - deployment: Migrate
+        displayName: Run database migrations
+        environment: acmehomes-demo
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: AzureCLI@2
+                  displayName: Deploy and run the migrations job
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+                      az config set extension.use_dynamic_install=yes_without_prompt
+                      loginServer=$(az acr list --resource-group "$RESOURCE_GROUP" --query "[0].loginServer" --output tsv)
+
+                      job=$(az deployment group create \
+                        --resource-group "$RESOURCE_GROUP" \
+                        --name "migrations-$IMAGE_TAG" \
+                        --template-file infra/migrations-job.bicep \
+                        --parameters image="$loginServer/acmehomes-migrations:$IMAGE_TAG" \
+                        --query properties.outputs.jobName.value --output tsv)
+
+                      execution=$(az containerapp job start --resource-group "$RESOURCE_GROUP" --name "$job" --query name --output tsv)
+                      echo "Started migrations execution $execution"
+
+                      # The job exits non-zero if migrations fail, which shows up here as a Failed execution.
+                      for attempt in $(seq 1 60); do
+                        status=$(az containerapp job execution show --resource-group "$RESOURCE_GROUP" --name "$job" \
+                          --job-execution-name "$execution" --query properties.status --output tsv)
+                        echo "Migrations status: $status"
+                        case "$status" in
+                          Succeeded) exit 0 ;;
+                          Failed|Stopped|Degraded)
+                            echo "##vso[task.logissue type=error]Migrations job $status. Check the job's console logs in Log Analytics."
+                            exit 1 ;;
+                        esac
+                        sleep 10
+                      done
+                      echo "##vso[task.logissue type=error]Timed out waiting for the migrations job."
+                      exit 1
+                  env:
+                    RESOURCE_GROUP: $(resourceGroup)
+                    IMAGE_TAG: $(imageTag)
+
+      - deployment: Api
+        displayName: Deploy API
+        dependsOn: Migrate
+        environment: acmehomes-demo
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: AzureCLI@2
+                  displayName: Deploy the API and smoke test it
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+                      loginServer=$(az acr list --resource-group "$RESOURCE_GROUP" --query "[0].loginServer" --output tsv)
+
+                      url=$(az deployment group create \
+                        --resource-group "$RESOURCE_GROUP" \
+                        --name "api-$IMAGE_TAG" \
+                        --template-file infra/api.bicep \
+                        --parameters image="$loginServer/acmehomes-api:$IMAGE_TAG" \
+                        --query properties.outputs.url.value --output tsv)
+
+                      # Allow for a cold start and the serverless database resuming from auto-pause.
+                      for attempt in $(seq 1 12); do
+                        if curl --fail --silent --show-error --max-time 30 "$url/api/markets" > /dev/null; then
+                          echo "Smoke test passed: $url/api/markets"
+                          echo "API reference: $url/scalar"
+                          exit 0
+                        fi
+                        echo "Waiting for the API to respond (attempt $attempt)..."
+                        sleep 10
+                      done
+                      echo "##vso[task.logissue type=error]API smoke test failed at $url/api/markets."
+                      exit 1
+                  env:
+                    RESOURCE_GROUP: $(resourceGroup)
+                    IMAGE_TAG: $(imageTag)

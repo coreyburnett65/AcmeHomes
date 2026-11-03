@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <PropertyGroup>
+    <!-- Image name for `dotnet publish -t:PublishContainer`. The SDK builds the image itself, so there's no Dockerfile. -->
+    <ContainerRepository>acmehomes-api</ContainerRepository>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
