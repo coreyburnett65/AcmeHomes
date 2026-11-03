@@ -19,6 +19,14 @@ No secrets are stored anywhere. Azure DevOps signs in to Azure with workload ide
 
 You do these steps once. They need the Azure CLI (`winget install -e --id Microsoft.AzureCLI`) and owner rights on your Azure subscription.
 
+### Prerequisites
+
+- **Use one personal Microsoft account for everything.** Sign in to both Azure and Azure DevOps with the same personal account, not a work account. A work account attaches the organization to the employer's Microsoft Entra directory and its policies.
+- **An Azure subscription.** If you don't have one, create a free account at https://azure.microsoft.com/free.
+  - It needs a credit card for identity verification and includes $200 of credit for 30 days.
+  - Upgrade to pay-as-you-go before the 30 days end, or the resources get disabled. Expected cost afterwards is about $5/month (see [Costs](#costs-and-shutting-down-between-demos)).
+  - Add a budget alert, for example $10/month, under **Cost Management → Budgets**.
+
 ### 1. Prepare the subscription
 
 ```powershell
@@ -30,22 +38,35 @@ foreach ($ns in 'Microsoft.App','Microsoft.ContainerRegistry','Microsoft.Sql','M
   az provider register --namespace $ns
 }
 
-az group create --name rg-acmehomes-demo --location eastus2
+az group create --name rg-acmehomes-demo --location centralus
 ```
+
+Every resource is created in the resource group's region. Azure blocks new SQL servers in busy regions for some subscriptions, especially new ones, and the template preview (`what-if`) doesn't catch it. Before choosing a region, check that it shows `Available`:
+
+```powershell
+$sub = az account show --query id --output tsv
+az rest --method get --url "https://management.azure.com/subscriptions/$sub/providers/Microsoft.Sql/locations/centralus/capabilities" --uri-parameters api-version=2023-08-01 --query status
+```
+
+East US 2 was the first choice for this project but was restricted for a new subscription in November 2026.
 
 ### 2. Create the Azure DevOps project
 
-1. Sign in at https://dev.azure.com and create an organization, if you don't have one, and a project named `AcmeHomes`.
+1. Sign in at https://aex.dev.azure.com with your personal account and select **Create new organization**.
+   - Choose a short name (it becomes `dev.azure.com/<name>`) and the United States region.
+   - Then create a project named `AcmeHomes`. Private is fine; it can be made public later.
 2. **Check that you can run pipelines.** New organizations may have no Microsoft-hosted build minutes until Microsoft approves a free grant. If your first run reports "No hosted parallelism has been purchased or granted", request it at https://aka.ms/azpipelines-parallelism-request. Approval can take a few business days, so do this early.
 
 ### 3. Create the Azure service connection
 
 1. In the project, go to **Project settings → Service connections → New service connection → Azure Resource Manager**.
-2. Choose **Workload identity federation (automatic)**.
-3. Set the scope level to **Resource group**: your subscription, then `rg-acmehomes-demo`.
+2. Set **Identity type** to **App registration (automatic)** and **Credential** to **Workload identity federation**.
+3. Leave the scope level as **Subscription**, select your subscription, then select `rg-acmehomes-demo` under **Resource group**. Selecting a resource group limits the connection to that group.
 4. Name it `acmehomes-azure` (the name the pipeline expects) and save. Don't grant access to all pipelines; you'll approve it on the first run.
 
 This gives the pipeline **Contributor** on the resource group only.
+
+If creating the connection fails with an error about obtaining a token, the organization isn't connected to your Azure directory yet. Go to **Organization settings → Microsoft Entra**, connect it to the directory your subscription uses (for a free account, usually "Default Directory"), and try again.
 
 ### 4. Let the pipeline assign the registry pull role
 
