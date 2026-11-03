@@ -61,7 +61,7 @@ public sealed class Community
     /// <summary>Null when the community has no homeowners association.</summary>
     public HoaDetails? Hoa { get; private set; }
 
-    public List<string> Amenities { get; private set; } = [];
+    public IReadOnlyList<string> Amenities { get; private set; } = [];
 
     public string? Description { get; private set; }
 

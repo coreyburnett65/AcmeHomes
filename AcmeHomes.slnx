@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/AcmeHomes.Domain/AcmeHomes.Domain.csproj" />
+    <Project Path="src/AcmeHomes.Infrastructure/AcmeHomes.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/AcmeHomes.Domain.Tests/AcmeHomes.Domain.Tests.csproj" />
+    <Project Path="tests/AcmeHomes.Infrastructure.Tests/AcmeHomes.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>
